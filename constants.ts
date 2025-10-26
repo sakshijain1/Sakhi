@@ -249,7 +249,7 @@ export const OPEN_COMMUNITIES: Community[] = [
   {
     title: 'Mindful Mornings',
     description: 'A space to start your day with shared meditation and positive intentions.',
-    image: 'https://images.pexels.com/photos/3621180/pexels-photo-3621180.jpeg?auto=compress&cs=tinysrgb&w=600',
+    image: 'https://images.pexels.com/photos/3771089/pexels-photo-3771089.jpeg?auto=compress&cs=tinysrgb&w=600',
     members: 150,
     category: 'Meditation',
     categoryIcon: 'self_improvement',
@@ -276,7 +276,7 @@ export const GUIDED_JOURNEYS: GuidedJourney[] = [
   {
     title: 'Breathwork Foundations',
     description: 'Learn powerful pranayam techniques to calm your nervous system.',
-    image: 'https://images.pexels.com/photos/3771120/pexels-photo-3771120.jpeg?auto=compress&cs=tinysrgb&w=600',
+    image: 'https://images.pexels.com/photos/7657388/pexels-photo-7657388.jpeg?auto=compress&cs=tinysrgb&w=600',
     members: 45,
     category: 'Pranayam',
     categoryIcon: 'air',
@@ -285,7 +285,7 @@ export const GUIDED_JOURNEYS: GuidedJourney[] = [
   {
     title: 'Mindful Mandala Creation',
     description: 'Find focus and peace by creating beautiful mandala patterns. A journey of art and mindfulness.',
-    image: 'https://images.pexels.com/photos/7164047/pexels-photo-7164047.jpeg?auto=compress&cs=tinysrgb&w=600',
+    image: 'https://images.pexels.com/photos/716281/pexels-photo-716281.jpeg?auto=compress&cs=tinysrgb&w=600',
     members: 35,
     category: 'Mandala Art',
     categoryIcon: 'draw',
