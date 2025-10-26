@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { GoogleGenAI, Chat } from '@google/genai';
 
 interface Message {
   role: 'user' | 'model';
@@ -10,66 +11,97 @@ interface ChatPageProps {
   onGoBack: () => void;
 }
 
-const cannedResponses = [
-  "I understand. It takes courage to acknowledge these feelings. I'm here to listen.",
-  "Thank you for sharing that with me. Remember to be kind to yourself.",
-  "That sounds really tough. It's okay to feel this way.",
-  "I hear you. Sometimes just putting it into words is a helpful step.",
-  "Let's take a deep breath together. Inhale... and exhale. You're in a safe space here.",
-  "It's brave of you to open up about this. What's on your mind right now?",
-  "Remember that all feelings are temporary, even the difficult ones. This moment will pass.",
-  "I'm here for you. You don't have to go through this alone."
-];
-
 const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const responseIndex = useRef(0);
-
-  // Simplified function to add a model response at once
-  const addModelResponse = (text: string) => {
-    const modelMessage: Message = { role: 'model', text: text };
-    setMessages(prev => [...prev, modelMessage]);
-    setIsLoading(false);
-  };
+  const chatRef = useRef<Chat | null>(null);
 
   useEffect(() => {
-    const initializeChat = () => {
+    const initializeChat = async () => {
       setIsLoading(true);
-      const initialUserMessage = `I'm here because I'm feeling ${feeling.toLowerCase()}.`;
-      setMessages([{ role: 'user', text: initialUserMessage }]);
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const chat = ai.chats.create({
+          model: 'gemini-2.5-flash',
+          config: {
+            systemInstruction: `You are Sakhi, a compassionate and supportive AI friend. Your role is to be a gentle, non-judgmental listener for users who are struggling with their mental well-being. Offer comfort, validate their feelings, and provide a safe space for them to express themselves. Avoid giving direct advice, diagnosis, or solutions. Instead, ask thoughtful, open-ended questions to help them explore their feelings. Keep your responses concise, warm, and encouraging. The user is starting this conversation because they are feeling ${feeling.toLowerCase()}.`,
+          },
+        });
+        chatRef.current = chat;
 
-      setTimeout(() => {
-        const firstResponse = "Thank you for sharing. It's completely okay to feel that way. I'm here to listen without any judgment. What's on your mind?";
-        addModelResponse(firstResponse);
-      }, 1000);
+        const initialUserMessageText = `I'm here because I'm feeling ${feeling.toLowerCase()}.`;
+        const initialUserMessage: Message = { role: 'user', text: initialUserMessageText };
+        
+        // Add user message and an empty model message to start
+        setMessages([initialUserMessage, { role: 'model', text: '' }]);
+
+        const response = await chat.sendMessageStream({ message: initialUserMessageText });
+        
+        let modelResponseText = '';
+        for await (const chunk of response) {
+            modelResponseText += chunk.text;
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].text = modelResponseText;
+                return newMessages;
+            });
+        }
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+        setMessages(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now. Please try again later." }]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initializeChat();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeling]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim() || isLoading) return;
+    if (!userInput.trim() || isLoading || !chatRef.current) return;
 
     const userMessage: Message = { role: 'user', text: userInput };
-    setMessages(prev => [...prev, userMessage]);
+    // Add user message and an empty model message for streaming
+    setMessages(prev => [...prev, userMessage, { role: 'model', text: '' }]);
+    const currentInput = userInput;
     setUserInput('');
     setIsLoading(true);
 
-    // Simulate thinking and then show the canned response
-    setTimeout(() => {
-        const responseText = cannedResponses[responseIndex.current % cannedResponses.length];
-        responseIndex.current += 1;
-        addModelResponse(responseText);
-    }, 1000);
+    try {
+      const response = await chatRef.current.sendMessageStream({ message: currentInput });
+      let modelResponseText = '';
+      for await (const chunk of response) {
+          modelResponseText += chunk.text;
+          setMessages(prev => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1].text = modelResponseText;
+              return newMessages;
+          });
+      }
+    } catch (error) {
+        console.error("Error sending message:", error);
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage && lastMessage.role === 'model') {
+                lastMessage.text = "Oops, something went wrong. Could you please try that again?";
+            }
+            return newMessages;
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
+
+  const isStreaming = isLoading && messages[messages.length - 1]?.role === 'model' && messages[messages.length - 1]?.text === '';
 
   return (
     <div className="flex flex-col w-full max-w-3xl flex-1 h-full bg-white/50 dark:bg-slate-800/30 backdrop-blur-lg rounded-t-xl shadow-2xl">
@@ -95,7 +127,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isStreaming && (
            <div className="flex items-end gap-3 justify-start">
              <div className="size-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">S</div>
              <div className="max-w-md rounded-xl px-4 py-3 shadow-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-bl-none">
