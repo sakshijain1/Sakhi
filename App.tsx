@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
@@ -8,11 +9,12 @@ import ProfessionalDetailPage from './components/ProfessionalDetailPage';
 import CommunityPage from './components/CommunityPage';
 import ResourcePage from './components/ResourcePage';
 import ResourceDetailPage from './components/ResourceDetailPage';
+import AboutUsPage from './components/AboutUsPage';
 import { PROFESSIONALS, RESOURCES } from './constants';
 
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = React.useState(false); 
-  const [currentPage, setCurrentPage] = useState<'home' | 'support' | 'chat' | 'professional' | 'professionalDetail' | 'community' | 'resources' | 'resourceDetail'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'support' | 'chat' | 'professional' | 'professionalDetail' | 'community' | 'resources' | 'resourceDetail' | 'about'>('home');
   const [userFeeling, setUserFeeling] = useState('');
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<number | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
@@ -52,6 +54,10 @@ const App: React.FC = () => {
   const handleNavigateToResources = () => {
     setCurrentPage('resources');
   };
+  
+  const handleNavigateToAbout = () => {
+    setCurrentPage('about');
+  };
 
   const handleSelectProfessional = (id: number) => {
     setSelectedProfessionalId(id);
@@ -76,6 +82,14 @@ const App: React.FC = () => {
     setCurrentPage('resources');
     setSelectedResourceId(null);
   }
+
+  const handleBackFromResources = () => {
+    if (userFeeling) {
+      setCurrentPage('support');
+    } else {
+      handleGoHome();
+    }
+  };
   
   const renderPage = () => {
     switch (currentPage) {
@@ -94,15 +108,17 @@ const App: React.FC = () => {
         }
         return <ProfessionalPage onGoBack={handleBackToSupport} onSelectProfessional={handleSelectProfessional} />;
       case 'community':
-        return <CommunityPage />;
+        return <CommunityPage onGoBack={handleGoHome} />;
       case 'resources':
-        return <ResourcePage onSelectResource={handleSelectResource} />;
+        return <ResourcePage onSelectResource={handleSelectResource} onGoBack={handleBackFromResources} />;
       case 'resourceDetail':
         const resource = RESOURCES.find(r => r.id === selectedResourceId);
         if (resource) {
             return <ResourceDetailPage resource={resource} onGoBack={handleBackToResources} />;
         }
-        return <ResourcePage onSelectResource={handleSelectResource} />;
+        return <ResourcePage onSelectResource={handleSelectResource} onGoBack={handleBackFromResources} />;
+      case 'about':
+        return <AboutUsPage onGoBack={handleGoHome} />;
       default:
         return <MainContent onStartSupport={handleStartSupport} onNavigateToCommunity={handleNavigateToCommunity} />;
     }
@@ -117,6 +133,7 @@ const App: React.FC = () => {
         onNavigateToGuides={handleNavigateToProfessional}
         onNavigateToCommunity={handleNavigateToCommunity}
         onNavigateToResources={handleNavigateToResources}
+        onNavigateToAbout={handleNavigateToAbout}
       />
       {renderPage()}
     </div>

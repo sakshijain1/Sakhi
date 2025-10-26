@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Chat } from '@google/genai';
 
 interface Message {
   role: 'user' | 'model';
@@ -11,109 +10,66 @@ interface ChatPageProps {
   onGoBack: () => void;
 }
 
+const cannedResponses = [
+  "I understand. It takes courage to acknowledge these feelings. I'm here to listen.",
+  "Thank you for sharing that with me. Remember to be kind to yourself.",
+  "That sounds really tough. It's okay to feel this way.",
+  "I hear you. Sometimes just putting it into words is a helpful step.",
+  "Let's take a deep breath together. Inhale... and exhale. You're in a safe space here.",
+  "It's brave of you to open up about this. What's on your mind right now?",
+  "Remember that all feelings are temporary, even the difficult ones. This moment will pass.",
+  "I'm here for you. You don't have to go through this alone."
+];
+
 const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const chatRef = useRef<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const responseIndex = useRef(0);
 
-  const API_KEY = process.env.API_KEY;
+  // Simplified function to add a model response at once
+  const addModelResponse = (text: string) => {
+    const modelMessage: Message = { role: 'model', text: text };
+    setMessages(prev => [...prev, modelMessage]);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    if (!API_KEY) {
-      setError('Configuration required. The API key is missing.');
-      return;
-    }
+    const initializeChat = () => {
+      setIsLoading(true);
+      const initialUserMessage = `I'm here because I'm feeling ${feeling.toLowerCase()}.`;
+      setMessages([{ role: 'user', text: initialUserMessage }]);
 
-    const initializeChat = async () => {
-      try {
-        setIsLoading(true);
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const newChat = ai.chats.create({
-          model: 'gemini-2.5-flash',
-          config: {
-            systemInstruction: 'You are Sakhi, a caring and empathetic AI companion from the "Sakhi - You are Safe Here" app. Your purpose is to provide a safe, non-judgmental space for users to explore their feelings. Your tone should always be calm, gentle, and reassuring. Listen actively, validate the user\'s feelings, and guide them with kindness. Do not give medical advice. If the user\'s situation seems serious, gently suggest that talking to a professional might be a helpful next step. Keep your responses supportive and encouraging.',
-          },
-        });
-        chatRef.current = newChat;
-
-        const initialUserMessage = `I'm here because I'm feeling ${feeling.toLowerCase()}.`;
-        setMessages([{ role: 'user', text: initialUserMessage }]);
-
-        const responseStream = await newChat.sendMessageStream({ message: initialUserMessage });
-        
-        let modelResponse = '';
-        setMessages(prev => [...prev, { role: 'model', text: '' }]);
-
-        for await (const chunk of responseStream) {
-          modelResponse += chunk.text;
-          setMessages(prev => {
-              const newMessages = [...prev];
-              newMessages[newMessages.length - 1].text = modelResponse;
-              return newMessages;
-          });
-        }
-      } catch (e) {
-        console.error(e);
-        setError('There was an issue starting the chat. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
+      setTimeout(() => {
+        const firstResponse = "Thank you for sharing. It's completely okay to feel that way. I'm here to listen without any judgment. What's on your mind?";
+        addModelResponse(firstResponse);
+      }, 1000);
     };
 
     initializeChat();
-  }, [feeling, API_KEY]);
+  }, [feeling]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim() || isLoading || !chatRef.current) return;
+    if (!userInput.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', text: userInput };
     setMessages(prev => [...prev, userMessage]);
     setUserInput('');
     setIsLoading(true);
 
-    try {
-      const responseStream = await chatRef.current.sendMessageStream({ message: userInput });
-      
-      let modelResponse = '';
-      setMessages(prev => [...prev, { role: 'model', text: '' }]);
-
-      for await (const chunk of responseStream) {
-        modelResponse += chunk.text;
-         setMessages(prev => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1].text = modelResponse;
-            return newMessages;
-        });
-      }
-
-    } catch (e) {
-      console.error(e);
-      setMessages(prev => [...prev, { role: 'model', text: 'I seem to be having trouble connecting. Please try again in a moment.' }]);
-    } finally {
-      setIsLoading(false);
-    }
+    // Simulate thinking and then show the canned response
+    setTimeout(() => {
+        const responseText = cannedResponses[responseIndex.current % cannedResponses.length];
+        responseIndex.current += 1;
+        addModelResponse(responseText);
+    }, 1000);
   };
-
-  if (error) {
-    return (
-      <div className="w-full max-w-2xl flex flex-col items-center text-center p-8 bg-white/50 dark:bg-slate-800/30 rounded-xl shadow-lg">
-        <span className="material-symbols-outlined text-5xl text-red-500 mb-4">error</span>
-        <h2 className="text-2xl font-bold mb-2">Error</h2>
-        <p className="text-slate-600 dark:text-slate-400">{error}</p>
-         <button onClick={onGoBack} className="mt-6 flex items-center justify-center min-w-[120px] cursor-pointer overflow-hidden rounded-xl h-11 px-6 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-base font-bold leading-normal hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
-          Go Back
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col w-full max-w-3xl flex-1 h-full bg-white/50 dark:bg-slate-800/30 backdrop-blur-lg rounded-t-xl shadow-2xl">
@@ -139,7 +95,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
             </div>
           </div>
         ))}
-        {isLoading && messages.length > 0 && messages[messages.length-1].role === 'user' && (
+        {isLoading && (
            <div className="flex items-end gap-3 justify-start">
              <div className="size-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">S</div>
              <div className="max-w-md rounded-xl px-4 py-3 shadow-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-bl-none">

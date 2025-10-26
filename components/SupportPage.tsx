@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface SupportPageProps {
@@ -13,7 +14,10 @@ const SupportPage: React.FC<SupportPageProps> = ({ feeling, onGoHome, onStartCha
   const feelingMessage = isFeeling ? `It's okay to feel ${feeling.toLowerCase()}.` : "Thank you for sharing.";
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center w-full">
+    <main className="relative flex flex-1 flex-col items-center justify-center px-4 py-12 text-center w-full">
+      <button onClick={onGoHome} className="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
+        <span className="material-symbols-outlined">arrow_back</span>
+      </button>
       <div className="flex min-w-72 flex-col gap-3 mb-12">
         <h1 className="text-[#0d171b] dark:text-slate-50 text-4xl sm:text-5xl md:text-6xl font-black leading-tight tracking-tighter">{feelingMessage}</h1>
         <p className="text-[#4c809a] dark:text-slate-400 text-lg font-normal leading-normal max-w-2xl">

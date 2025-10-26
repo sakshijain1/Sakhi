@@ -1,3 +1,4 @@
+
 export interface Feeling {
     name: string;
     icon: string;
@@ -242,7 +243,6 @@ export interface Community {
 
 export interface GuidedJourney extends Community {
   guideName: string;
-  guideImage: string;
 }
 
 export const OPEN_COMMUNITIES: Community[] = [
@@ -281,17 +281,15 @@ export const GUIDED_JOURNEYS: GuidedJourney[] = [
     category: 'Pranayam',
     categoryIcon: 'air',
     guideName: 'Anya Sharma',
-    guideImage: `https://images.pexels.com/photos/4056535/jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=1`,
   },
   {
-    title: 'Dynamic Dance Energy',
-    description: 'Release stress and find joy through expressive, guided movement.',
-    image: 'https://images.pexels.com/photos/1700810/pexels-photo-1700810.jpeg?auto=compress&cs=tinysrgb&w=600',
-    members: 30,
-    category: 'Dynamic Dancing',
-    categoryIcon: 'directions_run',
-    guideName: 'Jamal Green',
-    guideImage: `https://images.pexels.com/photos/4226256/jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=1`,
+    title: 'Mindful Mandala Creation',
+    description: 'Find focus and peace by creating beautiful mandala patterns. A journey of art and mindfulness.',
+    image: 'https://images.pexels.com/photos/7164047/pexels-photo-7164047.jpeg?auto=compress&cs=tinysrgb&w=600',
+    members: 35,
+    category: 'Mandala Art',
+    categoryIcon: 'draw',
+    guideName: 'Sofia Reyes',
   },
   {
     title: 'Deep Dive Meditation',
@@ -301,7 +299,6 @@ export const GUIDED_JOURNEYS: GuidedJourney[] = [
     category: 'Meditation',
     categoryIcon: 'self_improvement',
     guideName: 'Brother Leo',
-    guideImage: `https://images.pexels.com/photos/3775087/jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=1`,
   },
 ];
 

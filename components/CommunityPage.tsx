@@ -1,9 +1,15 @@
+
+
 import React, { useState, useMemo, useRef } from 'react';
 import { OPEN_COMMUNITIES, GUIDED_JOURNEYS, COMMUNITY_FILTERS, Community, GuidedJourney } from '../constants';
 
 type CommunityView = 'open' | 'guided';
 
-const CommunityPage: React.FC = () => {
+interface CommunityPageProps {
+    onGoBack: () => void;
+}
+
+const CommunityPage: React.FC<CommunityPageProps> = ({ onGoBack }) => {
     const [activeView, setActiveView] = useState<CommunityView>('open');
     const [activeFilter, setActiveFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,6 +35,11 @@ const CommunityPage: React.FC = () => {
 
     return (
         <main className="flex flex-1 flex-col items-center px-4 py-8 sm:py-12 w-full max-w-6xl">
+            <div className="w-full max-w-6xl self-start">
+                <button onClick={onGoBack} className="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors mb-4">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                </button>
+            </div>
             {/* Hero Section */}
             <section className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center text-center lg:text-left mb-12">
                 <div className="flex flex-col gap-6 items-center lg:items-start">
@@ -136,7 +147,7 @@ const CommunityPage: React.FC = () => {
                                             <span className="flex items-center gap-1.5 font-medium text-primary"><span className="material-symbols-outlined text-base">{j.categoryIcon}</span>{j.category}</span>
                                         </div>
                                         <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-300/70 dark:border-slate-700/70">
-                                            <img className="size-8 rounded-full object-cover" src={j.guideImage} alt={j.guideName} />
+                                            <span className="material-symbols-outlined text-lg text-slate-600 dark:text-slate-400">person</span>
                                             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Guided by {j.guideName}</span>
                                         </div>
                                         <button className="mt-auto w-full bg-primary text-white font-bold py-2.5 rounded-lg hover:bg-primary/90 transition-colors shadow-md">View Schedule</button>

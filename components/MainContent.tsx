@@ -29,7 +29,7 @@ const MainContent: React.FC<MainContentProps> = ({ onStartSupport, onNavigateToC
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
       <div className="flex min-w-72 flex-col gap-3 mb-12">
-        <h1 className="text-[#0d171b] dark:text-slate-50 text-5xl md:text-6xl font-black leading-tight tracking-tighter">You are Safe here.</h1>
+        <h1 className="text-[#0d171b] dark:text-slate-50 text-3xl md:text-4xl font-black leading-tight tracking-tighter">You are Safe here.</h1>
         <p className="text-[#4c809a] dark:text-slate-400 text-lg font-normal leading-normal">Your feelings are valid. Take a deep breath.</p>
       </div>
       <div className="w-full max-w-2xl rounded-xl bg-white/50 dark:bg-slate-800/30 backdrop-blur-lg shadow-xl p-6 sm:p-10">

@@ -1,11 +1,13 @@
+
 import React, { useState, useMemo } from 'react';
 import { RESOURCES, RESOURCE_FILTERS, Resource } from '../constants';
 
 interface ResourcePageProps {
   onSelectResource: (id: number) => void;
+  onGoBack: () => void;
 }
 
-const ResourcePage: React.FC<ResourcePageProps> = ({ onSelectResource }) => {
+const ResourcePage: React.FC<ResourcePageProps> = ({ onSelectResource, onGoBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [bookmarks, setBookmarks] = useState<Record<number, boolean>>(
@@ -60,8 +62,14 @@ const ResourcePage: React.FC<ResourcePageProps> = ({ onSelectResource }) => {
 
   return (
     <main className="flex-grow w-full bg-[#F9F7F3] dark:bg-[#1A2424] text-[#3C3C3C] dark:text-[#E0E0E0]">
+      <div className="container mx-auto max-w-6xl px-4 pt-8">
+        <button onClick={onGoBack} className="flex items-center gap-2 text-[#6B6B6B] dark:text-[#A9A9A9] font-semibold font-resource-body hover:text-[#3C3C3C] dark:hover:text-white transition-colors">
+            <span className="material-symbols-outlined">arrow_back</span>
+            Back
+        </button>
+      </div>
       {/* HeroSection */}
-      <section className="w-full py-12 md:py-20">
+      <section className="w-full py-12 md:py-16">
         <div className="container mx-auto max-w-6xl px-4">
           <div 
             className="flex min-h-[480px] flex-col items-center justify-center gap-8 rounded-xl bg-cover bg-center bg-no-repeat p-8 text-center"
@@ -156,8 +164,8 @@ const ResourcePage: React.FC<ResourcePageProps> = ({ onSelectResource }) => {
             <h2 className="font-resource-display text-3xl font-bold leading-tight">Stories of Growth, Delivered to You</h2>
             <p className="mx-auto mt-3 max-w-xl text-[#6B6B6B] dark:text-[#A9A9A9] font-resource-body">Join our newsletter for inspiring stories, new resources, and tips for your wellness journey.</p>
             <form className="mx-auto mt-8 flex max-w-lg flex-col gap-4 sm:flex-row">
-              <input className="form-input h-12 flex-grow rounded-full border-slate-300 dark:border-slate-600 bg-[#F9F7F3] dark:bg-slate-800 px-5 focus:border-[#76A6A5] focus:ring-[#76A6A5] font-resource-body" placeholder="Enter your email" type="email"/>
-              <button className="flex cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-8 bg-[#F4A261] text-white text-base font-bold leading-normal tracking-wide transition-opacity hover:opacity-90 font-resource-body" type="submit">
+              <input disabled className="form-input h-12 flex-grow rounded-full border-slate-300 dark:border-slate-600 bg-[#F9F7F3] dark:bg-slate-800 px-5 focus:border-[#76A6A5] focus:ring-[#76A6A5] font-resource-body disabled:opacity-50" placeholder="Enter your email" type="email"/>
+              <button disabled className="flex cursor-not-allowed opacity-50 items-center justify-center overflow-hidden rounded-full h-12 px-8 bg-[#F4A261] text-white text-base font-bold leading-normal tracking-wide font-resource-body" type="button">
                 <span className="truncate">Subscribe</span>
               </button>
             </form>

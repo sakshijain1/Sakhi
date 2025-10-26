@@ -6,9 +6,10 @@ interface HeaderProps {
   onNavigateToGuides: () => void;
   onNavigateToCommunity: () => void;
   onNavigateToResources: () => void;
+  onNavigateToAbout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onGoHome, onNavigateToGuides, onNavigateToCommunity, onNavigateToResources }) => {
+const Header: React.FC<HeaderProps> = ({ onGoHome, onNavigateToGuides, onNavigateToCommunity, onNavigateToResources, onNavigateToAbout }) => {
   const navItems = ['Home', 'Guides', 'Resources', 'Community', 'About Us'];
 
   return (
@@ -36,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({ onGoHome, onNavigateToGuides, onNavigat
                 if (item === 'Guides') onNavigateToGuides();
                 if (item === 'Community') onNavigateToCommunity();
                 if (item === 'Resources') onNavigateToResources();
-                // In a real app, other items would navigate elsewhere
+                if (item === 'About Us') onNavigateToAbout();
               }}
             >
               {item}
