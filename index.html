@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html class="light" lang="en">
 <head>
@@ -9,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
   <script>
     tailwind.config = {
@@ -34,7 +34,10 @@
             "background-dark": "#101c22",
           },
           fontFamily: {
-            "display": ["Manrope", "sans-serif"]
+            "display": ["Manrope", "sans-serif"],
+            // Fonts for the new Resource Page
+            "resource-display": ["Lora", "serif"],
+            "resource-body": ["Nunito Sans", "sans-serif"],
           },
           borderRadius: {
             "DEFAULT": "0.5rem",
@@ -65,7 +68,8 @@
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0"
   }
 }
 </script>
