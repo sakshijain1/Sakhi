@@ -1,34 +1,79 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GoogleGenAI, Chat, Modality } from '@google/genai';
+import React, { useState, useEffect, useRef } from 'react';
 
-// --- Audio Helper Functions ---
-function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
+// --- Canned Response Logic ---
+
+interface ResponseRule {
+  keywords: string[];
+  response: string | string[];
 }
 
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        // result is "data:audio/webm;base64,...."
-        // we need to remove the prefix
-        resolve(reader.result.split(',')[1]);
-      } else {
-        reject(new Error("Failed to convert blob to base64"));
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
-// --- End Audio Helper Functions ---
+const responseRules: ResponseRule[] = [
+  {
+    keywords: ['sad', 'unhappy', 'crying', 'depressed', 'down', 'lonely', 'alone', 'isolated'],
+    response: [
+      "It's completely okay to feel that way. Thank you for sharing that with me. Remember to be gentle with yourself.",
+      "I hear that you're going through a tough time. Feelings are like clouds passing in the sky; this one will pass too. I'm here to listen.",
+      "That sounds really difficult. Thank you for trusting me with this. Is there anything you'd like to talk about regarding this feeling?"
+    ]
+  },
+  {
+    keywords: ['stressed', 'anxious', 'worried', 'overwhelmed', 'pressure'],
+    response: [
+      "Stress and anxiety can be incredibly draining. Let's take a moment together. How about a slow, deep breath? In... and out. You're taking a positive step just by being here.",
+      "It sounds like there's a lot on your mind. When we feel overwhelmed, even small acts of kindness to ourselves can make a difference. What's one small thing you could do for yourself right now?",
+      "That feeling of pressure is very real. You're not alone in feeling it. Just talking about it is a great way to release some of that tension."
+    ]
+  },
+  {
+    keywords: ['confused', 'lost', 'don\'t know', 'stuck', 'uncertain'],
+    response: [
+      "It's alright to feel confused or lost sometimes. Life can be complicated, and you don't need to have all the answers right now.",
+      "Feeling stuck is a difficult place to be. Sometimes just acknowledging it is the first step. It's okay to not know which way to go.",
+      "Uncertainty can be uncomfortable. It's brave of you to sit with that feeling and talk about it."
+    ]
+  },
+  {
+    keywords: ['bored', 'empty', 'nothing'],
+    response: [
+        "Boredom can sometimes be our mind's way of asking for rest or for something new. What's one thing you used to enjoy doing, even as a child?",
+        "That feeling of emptiness can be uncomfortable. Sometimes it's a quiet space waiting to be filled with something gentle. Let's just acknowledge that it's there.",
+    ]
+  },
+   {
+    keywords: ['hello', 'hi', 'hey'],
+    response: "Hello there. I'm glad you're here. How are you feeling today?",
+  },
+  {
+    keywords: ['thank you', 'thanks'],
+    response: "You're very welcome. I'm always here if you need to talk."
+  },
+  {
+    keywords: ['good', 'happy', 'great', 'better', 'fine'],
+    response: "That's wonderful to hear. I'm glad you're having a good moment. What's bringing you that positive feeling?"
+  }
+];
+
+const defaultResponses = [
+  "Thank you for sharing that with me. Can you tell me more about it?",
+  "I'm here to listen. This is a safe space to explore that feeling.",
+  "That sounds important. I'm here for you.",
+  "I understand. It takes courage to share what's on your mind."
+];
+
+const getBotResponse = (text: string): string => {
+    const lowerText = text.toLowerCase();
+    for (const rule of responseRules) {
+        for (const keyword of rule.keywords) {
+            if (lowerText.includes(keyword)) {
+                const responses = Array.isArray(rule.response) ? rule.response : [rule.response];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+        }
+    }
+    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+}
+
+// --- End Canned Response Logic ---
 
 interface Message {
   id: number;
@@ -76,82 +121,65 @@ const AudioMessage: React.FC<{ message: Message; onPlay: (audioUrl: string) => v
 const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [status, setStatus] = useState('idle'); // idle, recording, transcribing, generating, error
+  const [status, setStatus] = useState('idle'); // idle, recording, generating, error
   const [isRecording, setIsRecording] = useState(false);
   
   const [currentPlayingUrl, setCurrentPlayingUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
 
-  const aiRef = useRef<GoogleGenAI | null>(null);
-  const chatRef = useRef<Chat | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    chatRef.current = aiRef.current.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: `You are Sakhi, a compassionate, warm, and supportive AI voice companion. Your purpose is to be a non-judgmental listener. Validate emotions, offer comfort, and create a safe space. Ask gentle, open-ended questions to help users reflect, but never give direct advice or diagnoses. You are a friend, not a therapist. Keep responses thoughtful but not overly long. If the user expresses thoughts of self-harm or is in immediate crisis, you must calmly and clearly say: "It sounds like you are going through a lot right now, and I'm concerned for your safety. Please reach out to a crisis hotline. You can call or text 988 in the US and Canada, or 111 in the UK, to connect with a trained professional who can help."`,
-      },
-    });
+  const addMessage = (message: Omit<Message, 'id'>) => {
+    setMessages(prev => [...prev, { ...message, id: Date.now() }]);
+  }
 
-    const initialFeeling = feeling || "something on my mind";
-    const startMessage = `I'm feeling ${initialFeeling.toLowerCase()}.`;
-    
-    // Initial message from AI
-    const startConversation = async () => {
-        setStatus('generating');
-        const response = await chatRef.current!.sendMessage({ message: startMessage });
+  const generateAndAddBotResponse = (userText: string) => {
+    setStatus('generating');
+    const botText = getBotResponse(userText);
+
+    setTimeout(() => {
+      addMessage({ author: 'model', type: 'text', text: botText });
+      setStatus('idle');
+    }, 1200); // Simulate bot "thinking"
+  };
+  
+  useEffect(() => {
+    setStatus('generating');
+    const initialFeeling = feeling || "How are you feeling?";
+    const botGreeting = getBotResponse(initialFeeling);
+
+    setTimeout(() => {
         setMessages([{
             id: Date.now(),
             author: 'model',
             type: 'text',
-            text: response.text,
+            text: botGreeting,
         }]);
         setStatus('idle');
-    }
-    startConversation();
-
+    }, 1000); // Simulate bot "thinking"
   }, [feeling]);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  
-  const addMessage = (message: Omit<Message, 'id'>) => {
-    setMessages(prev => [...prev, { ...message, id: Date.now() }]);
-  }
 
-  const handleSendText = async () => {
-    if (!inputText.trim()) return;
+  const handleSendText = () => {
+    if (!inputText.trim() || status !== 'idle') return;
     const textToSend = inputText;
     addMessage({ author: 'user', type: 'text', text: textToSend });
     setInputText('');
-    setStatus('generating');
-
-    try {
-      const response = await chatRef.current!.sendMessage({ message: textToSend });
-      addMessage({ author: 'model', type: 'text', text: response.text });
-    } catch (error) {
-      console.error("Error sending message:", error);
-      addMessage({ author: 'model', type: 'text', text: "Sorry, I encountered an error. Please try again." });
-    } finally {
-      setStatus('idle');
-    }
+    generateAndAddBotResponse(textToSend);
   };
 
   const handleMicClick = async () => {
     if (isRecording) {
-      // Stop recording
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
-      // 'onstop' event will handle the rest
     } else {
-      // Start recording
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("Your browser does not support audio recording.");
         return;
@@ -165,55 +193,31 @@ const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
           audioChunksRef.current.push(event.data);
         };
         
-        mediaRecorderRef.current.onstop = async () => {
-          setStatus('transcribing');
+        mediaRecorderRef.current.onstop = () => {
+          setStatus('generating');
+          const stream = mediaRecorderRef.current?.stream;
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const audioUrl = URL.createObjectURL(audioBlob);
 
-          try {
-            const base64Audio = await blobToBase64(audioBlob);
-            const audioPart = { inlineData: { data: base64Audio, mimeType: 'audio/webm' } };
-            const textPart = { text: 'Transcribe this audio message and respond to it thoughtfully based on our conversation history.' };
-            
-            const transcriptionResponse = await aiRef.current!.models.generateContent({
-              model: 'gemini-2.5-pro',
-              contents: { parts: [audioPart, textPart] }
-            });
+          addMessage({ 
+              author: 'user', 
+              type: 'audio', 
+              text: '', // No transcription text
+              audioUrl: audioUrl, 
+              duration: audioBlob.size / 16000 
+          });
+          
+          // Add a canned response for the voice note
+          setTimeout(() => {
+              addMessage({ 
+                  author: 'model', 
+                  type: 'text', 
+                  text: "Thank you for sharing your voice. It's good to hear you. I'm listening."
+              });
+              setStatus('idle');
+          }, 1200);
 
-            const userTranscription = transcriptionResponse.text;
-            addMessage({ author: 'user', type: 'audio', text: userTranscription, audioUrl: audioUrl, duration: audioBlob.size / 16000 }); // Approximate duration
-
-            setStatus('generating');
-            const chatResponse = await chatRef.current!.sendMessage({message: userTranscription});
-            const modelText = chatResponse.text;
-
-            // Generate audio for model's response
-            const ttsResponse = await aiRef.current!.models.generateContent({
-                model: 'gemini-2.5-flash-preview-tts',
-                contents: [{ parts: [{ text: modelText }] }],
-                config: {
-                    responseModalities: [Modality.AUDIO],
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } }
-                }
-            });
-
-            const base64ModelAudio = ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            if (base64ModelAudio) {
-                const modelAudioBytes = decode(base64ModelAudio);
-                const modelAudioBlob = new Blob([modelAudioBytes], { type: 'audio/mp3' }); // The API returns mp3
-                const modelAudioUrl = URL.createObjectURL(modelAudioBlob);
-                addMessage({ author: 'model', type: 'audio', text: modelText, audioUrl: modelAudioUrl, duration: modelAudioBlob.size / 16000 }); // Approximate duration
-            } else {
-                addMessage({ author: 'model', type: 'text', text: modelText });
-            }
-
-          } catch (error) {
-            console.error("Error during voice processing:", error);
-            addMessage({ author: 'model', type: 'text', text: "Sorry, I had trouble understanding that. Could you try again?" });
-          } finally {
-            setStatus('idle');
-            stream.getTracks().forEach(track => track.stop());
-          }
+          stream?.getTracks().forEach(track => track.stop());
         };
 
         mediaRecorderRef.current.start();
@@ -239,22 +243,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
 
   useEffect(() => {
     const audio = audioPlayerRef.current = new Audio();
-    
     const onPlay = () => setIsPlaying(true);
-    const onPause = () => {
-        setIsPlaying(false);
-        setAudioProgress(0);
-    };
-    const onTimeUpdate = () => {
-      if (audio.duration) {
-        setAudioProgress((audio.currentTime / audio.duration) * 100);
-      }
-    };
-    const onEnded = () => {
-        setIsPlaying(false);
-        setCurrentPlayingUrl(null);
-        setAudioProgress(0);
-    }
+    const onPause = () => { setIsPlaying(false); setAudioProgress(0); };
+    const onTimeUpdate = () => { if (audio.duration) setAudioProgress((audio.currentTime / audio.duration) * 100); };
+    const onEnded = () => { setIsPlaying(false); setCurrentPlayingUrl(null); setAudioProgress(0); };
 
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
@@ -321,11 +313,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ feeling, onGoBack }) => {
             onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
             placeholder={isRecording ? "Recording..." : "Type a message..."}
             className="flex-grow w-full rounded-full bg-slate-200 dark:bg-slate-700 border-transparent focus:border-primary focus:ring-primary px-4 py-2.5"
-            disabled={isRecording}
+            disabled={isRecording || status !== 'idle'}
         />
         <button
           onClick={inputText ? handleSendText : handleMicClick}
-          disabled={status === 'generating' || status === 'transcribing'}
+          disabled={status !== 'idle' && status !== 'recording'}
           className="flex-shrink-0 flex items-center justify-center size-12 rounded-full text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {inputText ? (
